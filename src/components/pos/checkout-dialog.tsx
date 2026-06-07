@@ -16,6 +16,7 @@ import { usePOSStore } from '@/store/pos';
 import { useClients } from '@/hooks/use-queries';
 import { createClient } from '@/lib/supabase/client';
 import type { Profile, PaymentMethod, Sale } from '@/types/database';
+import { createPortal } from 'react-dom';
 import { Receipt } from './receipt';
 import { printReceipt } from '@/lib/print';
 import { useI18n } from '@/lib/i18n/context';
@@ -272,10 +273,15 @@ export function CheckoutDialog({ open, onOpenChange, profile }: CheckoutDialogPr
               </p>
             </div>
 
-            {/* Ticket caché, imprimable */}
-            <div className="printable absolute -z-50 opacity-0 print:opacity-100 print:z-50">
-              <Receipt sale={completedSale} variant={ticketMode} />
-            </div>
+            {/* Ticket imprimable — rendu directement dans <body> via un portail,
+                pour qu'il sorte de la fenêtre (Dialog) et s'imprime sur UNE seule page */}
+            {typeof window !== 'undefined' &&
+              createPortal(
+                <div className="printable">
+                  <Receipt sale={completedSale} variant={ticketMode} />
+                </div>,
+                document.body,
+              )}
 
             <div className="flex flex-col gap-2 w-full pt-4">
               <Button onClick={() => handlePrint('client')} size="lg" className="w-full">

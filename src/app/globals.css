@@ -247,6 +247,11 @@
   .print-labels {
     display: none;
   }
+
+  /* Ticket imprimable — caché à l'écran, affiché seulement à l'impression */
+  .printable {
+    display: none;
+  }
 }
 
 @layer utilities {
@@ -270,27 +275,22 @@
 /*  - body.print-mode-label   → étiquette                      */
 /* ========================================================== */
 @media print {
-  /* On masque tout, puis on ne ré-affiche que le ticket.
-     visibility:hidden conserve la mise en page mais n'imprime rien ;
-     le .printable est sorti du flux en position fixed pour occuper
-     une seule page (évite la 2e page fantôme). */
-  body.print-mode-receipt * { visibility: hidden; }
-  body.print-mode-receipt .printable,
-  body.print-mode-receipt .printable * { visibility: visible; }
+  /* Le ticket est rendu dans <body> via un portail React (voir checkout-dialog.tsx).
+     On SUPPRIME tout le reste de la page (display:none = zéro hauteur → aucune
+     page fantôme), et on n'affiche que le ticket, en flux normal → il définit
+     lui-même la hauteur de la page et n'est imprimé qu'UNE seule fois. */
+  body.print-mode-receipt > *:not(.printable) { display: none !important; }
   body.print-mode-receipt .printable {
-    position: fixed;
-    left: 0;
-    top: 0;
+    display: block !important;
+    position: static;
     width: 100%;
     margin: 0;
     padding: 0;
     opacity: 1 !important;
-    z-index: 9999;
   }
-  /* Empêche le corps de générer des pages supplémentaires */
   html, body.print-mode-receipt {
     height: auto !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
   /* MODE ÉTIQUETTE (50×30 mm) */
