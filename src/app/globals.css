@@ -1,0 +1,400 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Surfaces (Notion light : canvas blanc, surface warm-gray) */
+    --background: 40 11% 96%;
+    --foreground: 40 5% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 40 5% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 40 5% 10%;
+
+    /* Brand — violet Notion #5645d4 */
+    --primary: 249 62% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondaire — warm neutral */
+    --secondary: 40 14% 95%;
+    --secondary-foreground: 40 8% 18%;
+
+    --muted: 40 11% 94%;
+    --muted-foreground: 40 4% 42%;
+
+    --accent: 249 62% 96%;
+    --accent-foreground: 249 55% 40%;
+
+    --destructive: 0 75% 53%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 131 74% 39%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 25 100% 43%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 206 100% 44%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 40 11% 89%;
+    --input: 40 11% 91%;
+    --ring: 249 62% 55%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Surfaces (Notion navy #0a1530) */
+    --background: 222 65% 11%;
+    --foreground: 40 15% 96%;
+
+    --card: 222 50% 14%;
+    --card-foreground: 40 15% 96%;
+
+    --popover: 222 50% 14%;
+    --popover-foreground: 40 15% 96%;
+
+    /* Brand — violet éclairci pour le dark */
+    --primary: 249 85% 70%;
+    --primary-foreground: 222 65% 11%;
+
+    --secondary: 222 35% 18%;
+    --secondary-foreground: 40 15% 96%;
+
+    --muted: 222 35% 18%;
+    --muted-foreground: 220 12% 65%;
+
+    --accent: 249 45% 26%;
+    --accent-foreground: 249 90% 86%;
+
+    --destructive: 0 70% 58%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 131 60% 48%;
+    --success-foreground: 222 65% 11%;
+
+    --warning: 25 90% 55%;
+    --warning-foreground: 222 65% 11%;
+
+    --info: 206 90% 60%;
+    --info-foreground: 222 65% 11%;
+
+    --border: 222 30% 22%;
+    --input: 222 30% 20%;
+    --ring: 249 85% 70%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+
+  html, body { @apply h-full; }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1, "cv11" 1;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Polices — Geist + Instrument Serif via next/font dans layout.tsx */
+  :root {
+    --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
+    --font-mono: 'Geist Mono', ui-monospace, monospace;
+  }
+
+  /* Sélection */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.2);
+    color: hsl(var(--primary));
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.35);
+  }
+
+  /* Focus visible */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  /* Empêche le zoom iOS sur les inputs */
+  @media (max-width: 768px) {
+    input, select, textarea { font-size: 16px !important; }
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-background/70 backdrop-blur-xl backdrop-saturate-150;
+  }
+
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/60;
+  }
+
+  /* Carte avec lueur subtile */
+  .card-glow {
+    box-shadow:
+      0 1px 2px hsl(var(--foreground) / 0.04),
+      0 4px 12px hsl(var(--foreground) / 0.04),
+      0 0 0 1px hsl(var(--border));
+  }
+
+  .card-glow-hover {
+    @apply transition-shadow duration-300;
+  }
+  .card-glow-hover:hover {
+    box-shadow:
+      0 1px 2px hsl(var(--foreground) / 0.04),
+      0 8px 24px hsl(var(--primary) / 0.08),
+      0 0 0 1px hsl(var(--primary) / 0.2);
+  }
+
+  /* Grille de fond pour les pages d'accueil */
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.5) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.5) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+
+  .bg-dotted {
+    background-image: radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+
+  /* Mesh gradient pour l'auth */
+  .bg-mesh {
+    background:
+      radial-gradient(at 20% 20%, hsl(var(--primary) / 0.18) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsl(280 89% 60% / 0.12) 0px, transparent 50%),
+      radial-gradient(at 80% 80%, hsl(199 89% 48% / 0.10) 0px, transparent 50%),
+      radial-gradient(at 20% 80%, hsl(var(--primary) / 0.08) 0px, transparent 50%);
+  }
+
+  /* Texte gradient */
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(var(--foreground)) 0%, hsl(var(--primary)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Stat numbers — display font */
+  .stat-number {
+    font-family: var(--font-display);
+    font-feature-settings: "tnum" 1, "lnum" 1;
+    letter-spacing: -0.02em;
+  }
+
+  /* Touch-friendly buttons */
+  .touch-target {
+    @apply min-h-[48px] min-w-[48px];
+  }
+
+  /* Ligne dotée d'un point pulsant pour status live */
+  .live-dot {
+    @apply relative inline-flex h-2 w-2 rounded-full bg-success;
+  }
+  .live-dot::after {
+    content: '';
+    @apply absolute inset-0 rounded-full bg-success animate-pulse-ring;
+  }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted) / 0.6) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* Ticket d'impression */
+  .receipt {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    line-height: 1.4;
+    color: #000;
+    background: #fff;
+  }
+
+  /* Conteneur étiquettes — caché à l'écran */
+  .print-labels {
+    display: none;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+}
+
+/* ========================================================== */
+/* IMPRESSION                                                  */
+/*                                                             */
+/* Deux modes d'impression coexistent dans l'app :             */
+/*  - TICKET DE CAISSE 80 mm (sale receipts)                   */
+/*  - ÉTIQUETTE ROULEAU 50×30 mm (roll labels)                 */
+/*                                                             */
+/* Le mode est choisi via une classe sur <body>, posée par     */
+/* JavaScript juste avant window.print() :                     */
+/*  - body.print-mode-receipt → ticket caisse                  */
+/*  - body.print-mode-label   → étiquette                      */
+/* ========================================================== */
+@media print {
+  /* On masque tout, puis on ne ré-affiche que le ticket.
+     visibility:hidden conserve la mise en page mais n'imprime rien ;
+     le .printable est sorti du flux en position fixed pour occuper
+     une seule page (évite la 2e page fantôme). */
+  body.print-mode-receipt * { visibility: hidden; }
+  body.print-mode-receipt .printable,
+  body.print-mode-receipt .printable * { visibility: visible; }
+  body.print-mode-receipt .printable {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    opacity: 1 !important;
+    z-index: 9999;
+  }
+  /* Empêche le corps de générer des pages supplémentaires */
+  html, body.print-mode-receipt {
+    height: auto !important;
+    overflow: hidden !important;
+  }
+
+  /* MODE ÉTIQUETTE (50×30 mm) */
+  body.print-mode-label * { visibility: hidden; }
+  body.print-mode-label .print-labels,
+  body.print-mode-label .print-labels * { visibility: visible; }
+  body.print-mode-label .print-labels {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    margin: 0;
+    padding: 0;
+  }
+  body.print-mode-label .print-label-page {
+    width: 50mm;
+    height: 30mm;
+    overflow: hidden;
+    page-break-after: always;
+    break-after: page;
+    margin: 0;
+    padding: 0;
+  }
+  body.print-mode-label .print-label-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  body.print-mode-receipt,
+  body.print-mode-label {
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* @page — la règle est globale, on ne peut pas la scoper par classe.
+   On injecte la bonne règle dynamiquement via JS avant impression
+   (voir lib/print.ts). En fallback : format ticket 80mm. */
+@page { margin: 0; size: 80mm auto; }
+
+/* ========================================================== */
+/* RTL — support arabe (direction droite-à-gauche)            */
+/* ========================================================== */
+[dir="rtl"] body { text-align: right; }
+
+/* Bordures latérales de la sidebar : inverser en RTL */
+[dir="rtl"] .border-r { border-right: 0; border-left: 1px solid hsl(var(--border)); }
+[dir="rtl"] .border-l { border-left: 0; border-right: 1px solid hsl(var(--border)); }
+
+/* Police adaptée à l'arabe (meilleure lisibilité) */
+[dir="rtl"] {
+  font-family: 'Segoe UI', 'Tahoma', 'Geist', system-ui, sans-serif;
+}
+
+/* Les champs numériques / monospace restent en LTR même en RTL
+   (prix, codes, numéros de série, métrages) */
+[dir="rtl"] .font-mono,
+[dir="rtl"] input[inputmode="decimal"],
+[dir="rtl"] .tabular-nums {
+  direction: ltr;
+  unicode-bidi: plaintext;
+}
+
+/* Toasts : repositionner à gauche en RTL */
+[dir="rtl"] [data-sonner-toaster][data-x-position="right"] {
+  right: auto !important;
+  left: 16px !important;
+}
+
+/* ========================================================== */
+/* RTL — alignement des tableaux                              */
+/* ========================================================== */
+/* En RTL, les colonnes "text-right" (chiffres : prix, stock)
+   doivent rester alignées du même côté que leur en-tête.
+   On force l'alignement logique pour que en-têtes et cellules
+   coïncident. */
+[dir="rtl"] table th,
+[dir="rtl"] table td {
+  text-align: right;
+}
+/* Les colonnes numériques explicitement à droite : on les met
+   à gauche en RTL pour qu'elles restent du côté "fin de ligne"
+   cohérent avec l'en-tête correspondant. */
+[dir="rtl"] table th.text-right,
+[dir="rtl"] table td.text-right {
+  text-align: left;
+}
+[dir="rtl"] table th.text-center,
+[dir="rtl"] table td.text-center {
+  text-align: center;
+}
+
+/* Barre de défilement fine pour les filtres de catégories */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--border));
+  border-radius: 9999px;
+}
