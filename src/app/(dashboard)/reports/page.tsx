@@ -5,6 +5,6 @@ import { ReportsClient } from './reports-client';
 export const metadata: Metadata = { title: 'Rapports' };
 
 export default async function ReportsPage() {
-  await requireAuth();
-  return <ReportsClient />;
+  const profile = await requireAuth();
+  return <ReportsClient role={profile.role} />;
 }

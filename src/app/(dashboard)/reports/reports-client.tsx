@@ -27,9 +27,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 import { useSales, useStores, useTopProducts } from '@/hooks/use-queries';
 import { formatCurrency, formatDate, formatMeters } from '@/lib/utils';
+import type { UserRole } from '@/types/database';
 
-export function ReportsClient() {
+export function ReportsClient({ role }: { role: UserRole }) {
   const { t } = useI18n();
+  const isAdmin = role === 'super_admin';
   const { data: stores } = useStores();
   const today = new Date();
   const monthAgo = new Date(); monthAgo.setDate(today.getDate() - 30);
@@ -138,13 +140,14 @@ export function ReportsClient() {
 
       // ===== Cartes de synthèse =====
       const cardY = 44;
-      const cardW = (pageW - 28 - 3 * 4) / 4;
-      const cards = [
-        { label: 'CHIFFRE D\'AFFAIRES', value: formatCurrency(stats.revenue) },
-        { label: 'NOMBRE DE VENTES', value: String(stats.count) },
-        { label: 'METRAGE VENDU', value: formatMeters(stats.metersSold) },
-        { label: 'PANIER MOYEN', value: formatCurrency(stats.avgTicket) },
+      const allCards = [
+        { label: 'CHIFFRE D\'AFFAIRES', value: formatCurrency(stats.revenue), adminOnly: true },
+        { label: 'NOMBRE DE VENTES', value: String(stats.count), adminOnly: false },
+        { label: 'METRAGE VENDU', value: formatMeters(stats.metersSold), adminOnly: false },
+        { label: 'PANIER MOYEN', value: formatCurrency(stats.avgTicket), adminOnly: true },
       ];
+      const cards = allCards.filter((c) => isAdmin || !c.adminOnly);
+      const cardW = (pageW - 28 - (cards.length - 1) * 4) / cards.length;
       cards.forEach((c, i) => {
         const x = 14 + i * (cardW + 4);
         doc.setFillColor(246, 245, 244);
@@ -226,18 +229,22 @@ export function ReportsClient() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatBig label={t('reports.revenue')} value={formatCurrency(stats.revenue)} icon={TrendingUp} highlight />
+      <div className={`grid grid-cols-2 gap-3 ${isAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-2'}`}>
+        {isAdmin && (
+          <StatBig label={t('reports.revenue')} value={formatCurrency(stats.revenue)} icon={TrendingUp} highlight />
+        )}
         <StatBig label={t('reports.sales_count')} value={String(stats.count)} icon={BarChart3} />
         <StatBig label={t('reports.meters_sold')} value={formatMeters(stats.metersSold)} icon={Package} />
-        <StatBig label={t('reports.avg_ticket')} value={formatCurrency(stats.avgTicket)} icon={TrendingUp} />
+        {isAdmin && (
+          <StatBig label={t('reports.avg_ticket')} value={formatCurrency(stats.avgTicket)} icon={TrendingUp} />
+        )}
       </div>
 
       <Tabs defaultValue="sales">
         <TabsList>
           <TabsTrigger value="sales">{t('reports.sales')}</TabsTrigger>
-          <TabsTrigger value="evolution">{t('reports.tab_evolution')}</TabsTrigger>
-          <TabsTrigger value="products">{t('reports.top_products')}</TabsTrigger>
+          {isAdmin && <TabsTrigger value="evolution">{t('reports.tab_evolution')}</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="products">{t('reports.top_products')}</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="sales">
@@ -275,6 +282,7 @@ export function ReportsClient() {
           </Card>
         </TabsContent>
 
+        {isAdmin && (
         <TabsContent value="evolution">
           <Card>
             <CardContent className="p-6">
@@ -298,7 +306,9 @@ export function ReportsClient() {
             </CardContent>
           </Card>
         </TabsContent>
+        )}
 
+        {isAdmin && (
         <TabsContent value="products">
           <Card>
             <CardContent className="p-6">
@@ -334,6 +344,7 @@ export function ReportsClient() {
             </CardContent>
           </Card>
         </TabsContent>
+        )}
       </Tabs>
     </div>
   );
