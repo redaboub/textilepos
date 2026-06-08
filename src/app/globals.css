@@ -275,12 +275,16 @@
 /*  - body.print-mode-label   → étiquette                      */
 /* ========================================================== */
 @media print {
-  /* Le ticket est rendu dans <body> via un portail React (voir checkout-dialog.tsx).
-     On SUPPRIME tout le reste de la page (display:none = zéro hauteur → aucune
-     page fantôme), et on n'affiche que le ticket, en flux normal → il définit
-     lui-même la hauteur de la page et n'est imprimé qu'UNE seule fois. */
-  body.print-mode-receipt > *:not(.printable) { display: none !important; }
-  body.print-mode-receipt .printable {
+  /* Le reçu est rendu dans <body> via un portail React (voir checkout-dialog.tsx).
+     On l'imprime dès qu'il est présent — que l'impression soit lancée par le
+     bouton de l'app (body.print-mode-receipt) OU par le navigateur/la tablette
+     (body.has-receipt, posé tant que l'écran de succès est affiché).
+     On SUPPRIME tout le reste (display:none = zéro hauteur → aucune page fantôme)
+     et on n'affiche que le reçu, en flux normal → imprimé UNE seule fois. */
+  body.print-mode-receipt > *:not(.printable),
+  body.has-receipt > *:not(.printable) { display: none !important; }
+  body.print-mode-receipt .printable,
+  body.has-receipt .printable {
     display: block !important;
     position: static;
     width: 100%;
@@ -288,7 +292,9 @@
     padding: 0;
     opacity: 1 !important;
   }
-  html, body.print-mode-receipt {
+  html,
+  body.print-mode-receipt,
+  body.has-receipt {
     height: auto !important;
     overflow: visible !important;
   }

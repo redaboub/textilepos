@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Banknote, FileText, ArrowRightLeft, CheckCircle2, Printer, User, UserCheck, UserPlus, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -69,6 +69,16 @@ export function CheckoutDialog({ open, onOpenChange, profile }: CheckoutDialogPr
   const paid = parseFloat(paidInput) || 0;
   const change = Math.max(0, paid - total);
   const credit = Math.max(0, total - paid);
+
+  // Tant que l'écran de succès est affiché, on marque le <body> :
+  // n'importe quelle impression (bouton de l'app OU impression navigateur/tablette)
+  // n'imprimera alors que le reçu, sur une seule page.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (completedSale) document.body.classList.add('has-receipt');
+    else document.body.classList.remove('has-receipt');
+    return () => document.body.classList.remove('has-receipt');
+  }, [completedSale]);
 
   const handleCreateClient = async () => {
     const name = newClientName.trim();
