@@ -8,6 +8,13 @@ import type {
   Category, Expense, Check, DashboardStats,
 } from '@/types/database';
 
+// Neutralise les caractères qui ont un sens dans les filtres PostgREST
+// (`,` sépare des conditions, `()` groupent, `*`/`%` sont des jokers).
+// Évite qu'une saisie de recherche puisse altérer ou casser la requête `.or(...)`.
+function sanitizeSearch(s: string): string {
+  return s.replace(/[,()*%\\]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 // =====================================================================
 // PROFILE
 // =====================================================================
@@ -82,7 +89,7 @@ export function useProducts(opts: { search?: string; onlyInStock?: boolean } = {
 
       if (opts.onlyInStock) q = q.gt('stock_meters', 0);
 
-      const search = opts.search?.trim();
+      const search = sanitizeSearch(opts.search ?? '');
       if (search && search.length >= 1) {
         q = q.or(`name.ilike.%${search}%,product_code.ilike.%${search}%`);
       }
@@ -114,7 +121,7 @@ export function useRolls(filters: RollsFilters = {}) {
     queryKey: ['rolls', filters],
     queryFn: async (): Promise<Roll[]> => {
       const supabase = createClient();
-      const search = filters.search?.trim();
+      const search = sanitizeSearch(filters.search ?? '');
 
       // Si on cherche, on doit potentiellement chercher dans le nom du produit aussi.
       // Stratégie : récupérer d'abord les product_ids matchants, puis filtrer.
@@ -163,10 +170,11 @@ export function useRollBySerial(serialOrBarcode: string, storeId?: string | null
     enabled: serialOrBarcode.length >= 2,
     queryFn: async (): Promise<Roll | null> => {
       const supabase = createClient();
+      const term = sanitizeSearch(serialOrBarcode);
       let q = supabase
         .from('rolls')
         .select('*, product:products(*, category:categories(*)), store:stores(*)')
-        .or(`serial_number.eq.${serialOrBarcode},barcode.eq.${serialOrBarcode}`)
+        .or(`serial_number.eq.${term},barcode.eq.${term}`)
         .eq('is_sold', false)
         .limit(1);
       if (storeId) q = q.eq('store_id', storeId);
@@ -180,12 +188,13 @@ export function useRollBySerial(serialOrBarcode: string, storeId?: string | null
 // =====================================================================
 // CLIENTS
 // =====================================================================
-export function useClients(search?: string) {
+export function useClients(rawSearch?: string) {
   return useQuery({
-    queryKey: ['clients', search],
+    queryKey: ['clients', rawSearch],
     queryFn: async (): Promise<Client[]> => {
       const supabase = createClient();
       let q = supabase.from('clients').select('*').eq('is_active', true).order('name');
+      const search = sanitizeSearch(rawSearch ?? '');
       if (search && search.length >= 2) {
         q = q.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
       }

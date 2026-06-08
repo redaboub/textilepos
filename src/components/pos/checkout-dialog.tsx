@@ -150,79 +150,48 @@ export function CheckoutDialog({ open, onOpenChange, profile }: CheckoutDialogPr
     try {
       const supabase = createClient();
 
-      const { data: numData, error: numErr } = await supabase.rpc('generate_document_number', { prefix: 'SALE' });
-      if (numErr) throw numErr;
-      const saleNumber = numData as string;
-
-      // Créer la vente
-      const { data: sale, error: saleErr } = await supabase
-        .from('sales')
-        .insert({
-          sale_number: saleNumber,
-          store_id: profile.store_id,
-          cashier_id: profile.id,
-          client_id: clientId,
-          subtotal: subtotalAfterItemDiscount,
-          discount_amount: globalDiscountAmount + itemsDiscount,
-          tax_amount: taxAmount,
-          total,
-          paid_amount: Math.min(paid, total),
-          change_amount: change,
-          credit_amount: credit,
-          payment_method: method,
-          notes,
-        })
-        .select('*, store:stores(*), cashier:profiles!sales_cashier_id_fkey(*), client:clients(*)')
-        .single();
-      if (saleErr) throw saleErr;
-
-      // Pour chaque article : créer la ligne + décrémenter le stock produit (RPC)
-      for (const it of items) {
-        const lineTotal = it.meters * it.price_per_meter * (1 - it.discount_percent / 100);
-        const { error: itemErr } = await supabase.from('sale_items').insert({
-          sale_id: sale.id,
+      // Création ATOMIQUE de la vente (en-tête + articles + stock + chèque)
+      // dans une seule transaction côté base : tout réussit, ou rien.
+      // Plus de vente partielle possible, et un seul aller-retour réseau.
+      const payload = {
+        store_id: profile.store_id,
+        client_id: clientId,
+        client_name: clientName || null,
+        subtotal: subtotalAfterItemDiscount,
+        discount_amount: globalDiscountAmount + itemsDiscount,
+        tax_amount: taxAmount,
+        total,
+        paid_amount: Math.min(paid, total),
+        change_amount: change,
+        credit_amount: credit,
+        payment_method: method,
+        notes,
+        items: items.map((it) => ({
           product_id: it.product.id,
-          item_type: 'meter',
           meters_sold: it.meters,
           price_per_meter: it.price_per_meter,
           discount_percent: it.discount_percent,
-          line_total: lineTotal,
-          remaining_after_sale: 0,
-        });
-        if (itemErr) throw itemErr;
-
-        const { error: stockErr } = await supabase.rpc('sell_product', {
-          p_product_id: it.product.id,
-          p_meters: it.meters,
-          p_sale_id: sale.id,
-          p_reason: clientName ? `Vente client - ${clientName}` : 'Vente client - Passage',
-        });
-        if (stockErr) throw stockErr;
-      }
-
-      // Envoie une seule alerte WhatsApp groupée pour les produits passés sous le seuil
-      await supabase.rpc('flush_low_stock_alerts');
-
-      // Si paiement par chèque : enregistrer le chèque (entrant) dans la table checks
-      if (method === 'check') {
-        const todayISO = new Date().toISOString().split('T')[0];
-        const { error: checkErr } = await supabase.from('checks').insert({
-          store_id: profile.store_id,
-          created_by: profile.id,
-          type: 'incoming',
+          line_total: it.meters * it.price_per_meter * (1 - it.discount_percent / 100),
+        })),
+        check: method === 'check' ? {
           check_number: checkNumber.trim(),
           bank_name: checkBank.trim(),
           issuer_name: checkIssuer.trim(),
-          client_id: clientId,
-          supplier_id: null,
-          amount: total,
-          issue_date: todayISO,
           due_date: checkDueDate,
-          status: 'pending',
-          notes: `Vente ${saleNumber}${clientName ? ' - ' + clientName : ''}`,
-        });
-        if (checkErr) throw checkErr;
-      }
+        } : null,
+      };
+
+      const { data: newSaleId, error: createErr } = await supabase.rpc('create_sale', { p: payload });
+      if (createErr) throw createErr;
+
+      // Récupérer la vente complète (magasin / caissier / client) pour le ticket
+      const { data: sale, error: fetchErr } = await supabase
+        .from('sales')
+        .select('*, store:stores(*), cashier:profiles!sales_cashier_id_fkey(*), client:clients(*)')
+        .eq('id', newSaleId)
+        .single();
+      if (fetchErr) throw fetchErr;
+      const saleNumber = sale.sale_number as string;
 
       // Construire l'objet vente complet pour le ticket
       const fullSale: Sale = {
