@@ -384,6 +384,28 @@ export const translations = {
   'settings.print_width': { fr: 'Largeur d\'impression', ar: 'عرض الطباعة' },
   'settings.currency': { fr: 'Devise', ar: 'العملة' },
   'settings.general': { fr: 'Général', ar: 'عام' },
+
+  // ---- Liste des ventes (page caissier) ----
+  'nav.sales': { fr: 'Ventes', ar: 'المبيعات' },
+  'checkout.meters': { fr: 'Métrage', ar: 'الطول' },
+  'checkout.price': { fr: 'Prix /m', ar: 'السعر/م' },
+  'checkout.discount': { fr: 'Remise %', ar: 'تخفيض %' },
+  'checkout.paid': { fr: 'Montant payé', ar: 'المبلغ المدفوع' },
+  'sales.edit_add': { fr: 'Ajouter un article', ar: 'إضافة منتج' },
+  'sales.edit_empty': { fr: 'Ajoute au moins un article', ar: 'أضف منتجًا واحدًا على الأقل' },
+  'sales.edit_saved': { fr: 'Vente modifiée', ar: 'تم تعديل البيع' },
+  'sales.title': { fr: 'Liste des ventes', ar: 'قائمة المبيعات' },
+  'sales.page_subtitle': { fr: 'Consulter, réimprimer et corriger les ventes', ar: 'عرض وإعادة طباعة وتصحيح المبيعات' },
+  'sales.search': { fr: 'Rechercher (n° de vente ou client)…', ar: 'بحث (رقم البيع أو العميل)…' },
+  'sales.count': { fr: 'Ventes', ar: 'المبيعات' },
+  'sales.total_amount': { fr: 'Montant total', ar: 'المبلغ الإجمالي' },
+  'sales.detail': { fr: 'Détail de la vente', ar: 'تفاصيل البيع' },
+  'sales.reprint': { fr: 'Réimprimer le ticket', ar: 'إعادة طباعة التذكرة' },
+  'sales.edit': { fr: 'Modifier la vente', ar: 'تعديل البيع' },
+  'sales.no_sales': { fr: 'Aucune vente trouvée', ar: 'لا توجد مبيعات' },
+  'sales.articles': { fr: 'Articles', ar: 'المنتجات' },
+  'sales.from': { fr: 'Du', ar: 'من' },
+  'sales.to': { fr: 'Au', ar: 'إلى' },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
