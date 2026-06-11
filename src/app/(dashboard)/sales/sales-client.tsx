@@ -28,7 +28,7 @@ import {
 
 import { Receipt } from '@/components/pos/receipt';
 import { EditSaleDialog } from './edit-sale-dialog';
-import { printReceiptHtml } from '@/lib/print';
+import { printReceiptHtml, openReceiptWindow } from '@/lib/print';
 import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
 import { formatCurrency, formatDate, formatDateTime, formatNumber, formatMeters } from '@/lib/utils';
@@ -117,8 +117,12 @@ export function SalesClient({ role }: { role: UserRole }) {
   }, [all]);
 
   const handleReprint = (sale: Sale) => {
+    // Ouvrir la fenêtre d'impression IMMÉDIATEMENT (pendant le clic),
+    // sinon la tablette/le navigateur la bloque comme popup.
+    const win = openReceiptWindow();
     setPrintSale(sale);
-    setTimeout(() => printReceiptHtml(receiptRef.current), 80);
+    // Laisser React rendre le ticket de cette vente, puis l'écrire dans la fenêtre
+    setTimeout(() => printReceiptHtml(receiptRef.current, win), 80);
   };
 
   // ---- Exports (admin) ----

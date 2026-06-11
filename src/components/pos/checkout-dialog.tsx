@@ -17,7 +17,7 @@ import { useClients } from '@/hooks/use-queries';
 import { createClient } from '@/lib/supabase/client';
 import type { Profile, PaymentMethod, Sale } from '@/types/database';
 import { Receipt } from './receipt';
-import { printReceiptHtml } from '@/lib/print';
+import { printReceiptHtml, openReceiptWindow } from '@/lib/print';
 import { useI18n } from '@/lib/i18n/context';
 
 const PAYMENT_OPTIONS: { value: PaymentMethod; labelKey: any; icon: any }[] = [
@@ -221,9 +221,12 @@ export function CheckoutDialog({ open, onOpenChange, profile }: CheckoutDialogPr
   };
 
   const handlePrint = (mode: 'client' | 'magasin') => {
+    // Ouvrir la fenêtre d'impression IMMÉDIATEMENT (pendant le clic),
+    // sinon la tablette/le navigateur la bloque comme popup.
+    const win = openReceiptWindow();
     setTicketMode(mode);
-    // Laisser React rendre le bon ticket (client/magasin) avant de l'imprimer
-    setTimeout(() => printReceiptHtml(receiptRef.current), 60);
+    // Laisser React rendre le bon ticket (client/magasin), puis l'écrire dans la fenêtre
+    setTimeout(() => printReceiptHtml(receiptRef.current, win), 60);
   };
 
   // Vue succès + tickets

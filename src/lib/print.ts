@@ -70,19 +70,50 @@ export const printReceipt = () => printAs('receipt');
 export const printLabel = () => printAs('label');
 
 /**
- * Imprime un ticket de façon TOTALEMENT isolée, dans un iframe dédié.
- * L'iframe ne contient QUE le ticket → impossible d'avoir des pages en
- * double, ou d'imprimer la liste / l'écran de succès à la place.
- * Robuste sur tablette et navigateur (ne dépend d'aucune règle @media print
- * globale ni de classe sur <body>).
+ * À appeler DIRECTEMENT dans le gestionnaire de clic (de façon synchrone) :
+ * ouvre la fenêtre d'impression tout de suite — les navigateurs n'autorisent
+ * window.open que pendant un geste utilisateur. Le contenu sera écrit juste
+ * après par printReceiptHtml().
+ */
+export function openReceiptWindow(): Window | null {
+  if (typeof window === 'undefined') return null;
+  const win = window.open('', '_blank', 'width=420,height=640');
+  if (win) {
+    try {
+      win.document.write('<!DOCTYPE html><html><body style="font-family:sans-serif;padding:16px;color:#555">…</body></html>');
+    } catch { /* noop */ }
+  }
+  return win;
+}
+
+/**
+ * Imprime un ticket de façon TOTALEMENT isolée.
+ * Méthode principale : écrire le ticket dans la FENÊTRE dédiée ouverte au
+ * clic (openReceiptWindow). Elle ne contient QUE le ticket → l'aperçu
+ * d'impression (navigateur ou tablette) montre EXACTEMENT le ticket.
+ * C'est la méthode la plus fiable sur Android/Chrome tablette, où
+ * l'impression depuis un iframe caché donne des aperçus erronés.
+ * Repli : si la fenêtre a été bloquée (popup), on utilise un iframe.
  *
  * @param container un élément dont le contenu (innerHTML) est le ticket
+ * @param win la fenêtre ouverte au clic via openReceiptWindow() (ou null)
  */
-export function printReceiptHtml(container: HTMLElement | null) {
-  if (typeof window === 'undefined' || !container) return;
+export function printReceiptHtml(container: HTMLElement | null, win?: Window | null) {
+  if (typeof window === 'undefined' || !container) { win?.close(); return; }
   const html = container.innerHTML;
-  if (!html.trim()) return;
+  if (!html.trim()) { win?.close(); return; }
 
+  const doc = buildReceiptDocument(html);
+
+  // --- Méthode 1 : fenêtre dédiée (aperçu exact, fiable sur tablette) ---
+  if (win && !win.closed) {
+    win.document.open();
+    win.document.write(doc);
+    win.document.close();
+    return; // l'impression est lancée par le script embarqué dans la fenêtre
+  }
+
+  // --- Repli : iframe isolé (si le popup est bloqué) ---
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
   iframe.style.position = 'fixed';
@@ -97,13 +128,7 @@ export function printReceiptHtml(container: HTMLElement | null) {
   if (!cw) { iframe.remove(); return; }
 
   cw.document.open();
-  cw.document.write(
-    '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
-    '@page{size:80mm auto;margin:0}' +
-    "html,body{margin:0;padding:0;background:#fff;color:#000;font-family:'Courier New',monospace;font-size:11px;line-height:1.4}" +
-    '*{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}' +
-    '</style></head><body>' + html + '</body></html>'
-  );
+  cw.document.write(doc);
   cw.document.close();
 
   let cleaned = false;
@@ -113,12 +138,23 @@ export function printReceiptHtml(container: HTMLElement | null) {
     try { iframe.remove(); } catch { /* noop */ }
   };
   cw.onafterprint = cleanup;
-
-  // Laisser l'iframe se mettre en page avant d'imprimer
-  setTimeout(() => {
-    try { cw.focus(); cw.print(); } catch { cleanup(); }
-  }, 150);
-
-  // Filet de sécurité si afterprint ne se déclenche pas
   setTimeout(cleanup, 60000);
+}
+
+/** Document HTML autonome du ticket : style + impression auto + fermeture auto. */
+function buildReceiptDocument(html: string): string {
+  return (
+    '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+    '<title>Ticket</title><style>' +
+    '@page{size:80mm auto;margin:0}' +
+    "html,body{margin:0;padding:0;background:#fff;color:#000;font-family:'Courier New',monospace;font-size:11px;line-height:1.4}" +
+    '*{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}' +
+    '</style></head><body>' + html +
+    '<script>' +
+    'window.onafterprint=function(){setTimeout(function(){window.close()},200)};' +
+    'setTimeout(function(){window.focus();window.print()},250);' +
+    '<\/script>' +
+    '</body></html>'
+  );
 }
