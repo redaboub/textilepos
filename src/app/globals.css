@@ -275,28 +275,50 @@
 /*  - body.print-mode-label   → étiquette                      */
 /* ========================================================== */
 @media print {
-  /* Le reçu est rendu dans <body> via un portail React (voir checkout-dialog.tsx).
-     On l'imprime dès qu'il est présent — que l'impression soit lancée par le
-     bouton de l'app (body.print-mode-receipt) OU par le navigateur/la tablette
-     (body.has-receipt, posé tant que l'écran de succès est affiché).
-     On SUPPRIME tout le reste (display:none = zéro hauteur → aucune page fantôme)
-     et on n'affiche que le reçu, en flux normal → imprimé UNE seule fois. */
+  /* ============ TICKET DE CAISSE (80 mm) — version blindée ============
+     Le ticket est rendu par un portail React DIRECTEMENT dans <body>
+     (div.printable). Pendant l'impression :
+       1. on coupe tous les enfants directs de <body> sauf .printable
+          (display:none = zéro hauteur -> aucune page fantôme) ;
+       2. on coupe AUSSI les overlays Radix ([data-radix-portal],
+          [data-radix-popper-content-wrapper], [role=dialog], [data-state])
+          et tout élément en position:fixed — sur Chrome Android, ces
+          portails échappent au sélecteur enfant-direct et provoquaient
+          des doublons / aperçus erronés ;
+       3. le ticket s'affiche en flux normal et définit seul la hauteur. */
   body.print-mode-receipt > *:not(.printable),
   body.has-receipt > *:not(.printable) { display: none !important; }
+
+  body.print-mode-receipt [data-radix-portal],
+  body.print-mode-receipt [data-radix-popper-content-wrapper],
+  body.print-mode-receipt [role='dialog'],
+  body.print-mode-receipt [data-sonner-toaster],
+  body.has-receipt [data-radix-portal],
+  body.has-receipt [data-radix-popper-content-wrapper],
+  body.has-receipt [role='dialog'],
+  body.has-receipt [data-sonner-toaster] { display: none !important; }
+
   body.print-mode-receipt .printable,
   body.has-receipt .printable {
     display: block !important;
-    position: static;
-    width: 100%;
-    margin: 0;
-    padding: 0;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
     opacity: 1 !important;
+    visibility: visible !important;
+  }
+  body.print-mode-receipt .printable * ,
+  body.has-receipt .printable * {
+    visibility: visible !important;
   }
   html,
   body.print-mode-receipt,
   body.has-receipt {
     height: auto !important;
+    min-height: 0 !important;
     overflow: visible !important;
+    background: #fff !important;
   }
 
   /* MODE ÉTIQUETTE (50×30 mm) */

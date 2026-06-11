@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -28,7 +29,7 @@ import {
 
 import { Receipt } from '@/components/pos/receipt';
 import { EditSaleDialog } from './edit-sale-dialog';
-import { printReceiptHtml, openReceiptWindow } from '@/lib/print';
+import { printReceipt } from '@/lib/print';
 import { createClient } from '@/lib/supabase/client';
 import { useI18n } from '@/lib/i18n/context';
 import { formatCurrency, formatDate, formatDateTime, formatNumber, formatMeters } from '@/lib/utils';
@@ -52,7 +53,6 @@ export function SalesClient({ role }: { role: UserRole }) {
   const [selected, setSelected] = useState<Sale | null>(null);
   const [editing, setEditing] = useState<Sale | null>(null);
   const [printSale, setPrintSale] = useState<Sale | null>(null);
-  const receiptRef = useRef<HTMLDivElement>(null);
 
   const { data: sales, isLoading } = useQuery({
     queryKey: ['sales-full', from, to],
@@ -117,13 +117,26 @@ export function SalesClient({ role }: { role: UserRole }) {
   }, [all]);
 
   const handleReprint = (sale: Sale) => {
-    // Ouvrir la fenêtre d'impression IMMÉDIATEMENT (pendant le clic),
-    // sinon la tablette/le navigateur la bloque comme popup.
-    const win = openReceiptWindow();
     setPrintSale(sale);
-    // Laisser React rendre le ticket de cette vente, puis l'écrire dans la fenêtre
-    setTimeout(() => printReceiptHtml(receiptRef.current, win), 80);
+    // Laisser React rendre le ticket de cette vente avant d'imprimer
+    setTimeout(() => printReceipt(), 80);
   };
+
+  // Tant qu'un ticket est sélectionné pour réimpression, on marque <body> :
+  // le CSS d'impression n'affiche alors QUE le ticket (voir globals.css).
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (printSale) document.body.classList.add('has-receipt');
+    else document.body.classList.remove('has-receipt');
+    return () => document.body.classList.remove('has-receipt');
+  }, [printSale]);
+
+  // Désélectionner le ticket une fois l'impression terminée (ou annulée)
+  useEffect(() => {
+    const done = () => setPrintSale(null);
+    window.addEventListener('afterprint', done);
+    return () => window.removeEventListener('afterprint', done);
+  }, []);
 
   // ---- Exports (admin) ----
   const exportExcel = async () => {
@@ -464,10 +477,15 @@ export function SalesClient({ role }: { role: UserRole }) {
         </DialogContent>
       </Dialog>
 
-      {/* Ticket rendu caché ; imprimé dans un iframe isolé (réimpression) */}
-      <div ref={receiptRef} style={{ display: 'none' }} aria-hidden>
-        {printSale && <Receipt sale={printSale} variant="client" />}
-      </div>
+      {/* Ticket imprimable — portail DIRECT dans <body> ; seul élément
+          affiché pendant l'impression (voir @media print, globals.css) */}
+      {printSale && typeof window !== 'undefined' &&
+        createPortal(
+          <div className="printable">
+            <Receipt sale={printSale} variant="client" />
+          </div>,
+          document.body,
+        )}
 
       {/* Modifier la vente */}
       <EditSaleDialog
