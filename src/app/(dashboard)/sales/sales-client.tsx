@@ -124,19 +124,16 @@ export function SalesClient({ role }: { role: UserRole }) {
 
   // Tant qu'un ticket est sélectionné pour réimpression, on marque <body> :
   // le CSS d'impression n'affiche alors QUE le ticket (voir globals.css).
+  // IMPORTANT : on ne retire PAS cette protection sur 'afterprint' — sur
+  // Android, l'aperçu d'impression est généré APRÈS le retour de print(),
+  // et retirer la classe trop tôt faisait réapparaître la page entière
+  // dans l'aperçu. Le ticket reste simplement monté (invisible à l'écran).
   useEffect(() => {
     if (typeof document === 'undefined') return;
     if (printSale) document.body.classList.add('has-receipt');
     else document.body.classList.remove('has-receipt');
     return () => document.body.classList.remove('has-receipt');
   }, [printSale]);
-
-  // Désélectionner le ticket une fois l'impression terminée (ou annulée)
-  useEffect(() => {
-    const done = () => setPrintSale(null);
-    window.addEventListener('afterprint', done);
-    return () => window.removeEventListener('afterprint', done);
-  }, []);
 
   // ---- Exports (admin) ----
   const exportExcel = async () => {
