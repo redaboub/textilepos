@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Search, Printer, Eye, Pencil, Receipt as ReceiptIcon } from 'lucide-react';
@@ -76,6 +76,22 @@ export function SalesClient({ role }: { role: UserRole }) {
     // Laisser React monter le ticket avant de lancer l'impression
     setTimeout(() => printReceipt(), 80);
   };
+
+  // Tant qu'un ticket est prêt à (ré)imprimer, on marque le <body> : SEUL le
+  // ticket s'imprime, même si l'impression est lancée par la tablette/navigateur.
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (printSale) document.body.classList.add('has-receipt');
+    else document.body.classList.remove('has-receipt');
+    return () => document.body.classList.remove('has-receipt');
+  }, [printSale]);
+
+  // Nettoyer une fois l'impression terminée (ou annulée)
+  useEffect(() => {
+    const done = () => setPrintSale(null);
+    window.addEventListener('afterprint', done);
+    return () => window.removeEventListener('afterprint', done);
+  }, []);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -181,7 +197,7 @@ export function SalesClient({ role }: { role: UserRole }) {
 
       {/* Détail de la vente */}
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           {selected && (
             <>
               <DialogHeader>
@@ -192,46 +208,37 @@ export function SalesClient({ role }: { role: UserRole }) {
               </DialogHeader>
 
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="grid grid-cols-2 gap-3 text-sm">
                   <Info label={t('common.date')} value={formatDateTime(selected.sale_date)} />
                   <Info label={t('common.client')} value={selected.client?.name ?? t('common.walk_in')} />
                   <Info label={t('topbar.cashier')} value={selected.cashier?.full_name ?? '—'} />
                   <Info label={t('checkout.payment_method')} value={PAYMENT_LABEL[selected.payment_method] ?? selected.payment_method} />
                 </div>
 
-                <div className="rounded-lg border border-border/60 overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t('common.product')}</TableHead>
-                        <TableHead className="text-right">{t('checkout.meters')}</TableHead>
-                        <TableHead className="text-right">{t('common.total')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {(selected.items ?? []).map((it, i) => (
-                        <TableRow key={it.id || i}>
-                          <TableCell className="text-sm">
-                            {it.product?.name ?? '—'}
-                            {it.discount_percent > 0 && (
-                              <span className="text-[10px] text-warning ms-1">−{it.discount_percent}%</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-xs">
-                            {formatNumber(it.meters_sold, 2)} × {formatCurrency(it.price_per_meter)}
-                          </TableCell>
-                          <TableCell className="text-right font-mono font-semibold">{formatCurrency(it.line_total)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                {/* Articles — liste compacte (évite le débordement d'un tableau en RTL) */}
+                <div className="rounded-lg border border-border/60 divide-y divide-border/60">
+                  {(selected.items ?? []).map((it, i) => (
+                    <div key={it.id || i} className="flex items-center justify-between gap-3 p-3">
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm truncate">{it.product?.name ?? '—'}</div>
+                        <div className="text-xs text-muted-foreground font-mono">
+                          {formatNumber(it.meters_sold, 2)} × {formatCurrency(it.price_per_meter)}
+                          {it.discount_percent > 0 && <span className="text-warning"> · −{it.discount_percent}%</span>}
+                        </div>
+                      </div>
+                      <div className="font-mono font-semibold text-sm whitespace-nowrap text-foreground">
+                        {formatCurrency(it.line_total)}
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="space-y-1 text-sm">
+                {/* Totaux */}
+                <div className="rounded-lg bg-muted/40 p-3 space-y-1.5 text-sm">
                   <Row label={t('receipt.subtotal')} value={formatCurrency(selected.subtotal)} />
                   {selected.discount_amount > 0 && <Row label={t('receipt.discount')} value={`−${formatCurrency(selected.discount_amount)}`} />}
                   {selected.tax_amount > 0 && <Row label={t('receipt.tax')} value={formatCurrency(selected.tax_amount)} />}
-                  <div className="border-t border-border pt-1 mt-1">
+                  <div className="border-t border-border pt-1.5 mt-1.5">
                     <Row label={<strong>{t('receipt.total')}</strong>} value={<strong>{formatCurrency(selected.total)}</strong>} />
                   </div>
                   {selected.credit_amount > 0 && (
@@ -291,9 +298,9 @@ function Info({ label, value }: { label: string; value: React.ReactNode }) {
 
 function Row({ label, value }: { label: React.ReactNode; value: React.ReactNode }) {
   return (
-    <div className="flex justify-between">
+    <div className="flex items-center justify-between gap-3">
       <span className="text-muted-foreground">{label}</span>
-      <span className="font-mono">{value}</span>
+      <span className="font-mono text-foreground whitespace-nowrap">{value}</span>
     </div>
   );
 }
