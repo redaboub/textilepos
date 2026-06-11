@@ -9,9 +9,11 @@ export function formatPhone(value: string | null | undefined) {
   if (digits.startsWith('212')) digits = digits.slice(3);
   // Retire un éventuel 0 initial
   if (digits.startsWith('0')) digits = digits.slice(1);
-  // Garde les 10 derniers chiffres max
-  digits = digits.slice(-10);
-  return `+212 ${digits}`;
+  // Garde les 9 derniers chiffres max (numéro national marocain)
+  digits = digits.slice(-9);
+  // Groupage lisible : +212 6XX XX XX XX
+  const grouped = digits.replace(/^(\d{3})(\d{2})(\d{2})(\d{2})$/, '$1 $2 $3 $4');
+  return `+212 ${grouped}`;
 }
 
 export function cn(...inputs: ClassValue[]) {

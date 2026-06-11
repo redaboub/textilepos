@@ -221,19 +221,17 @@ function ClientFormDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="phone">{t('clients.phone')} *</Label>
-              <div className="mt-1.5 flex items-center gap-2">
-                <span dir="ltr" className="shrink-0 inline-flex h-10 items-center rounded-lg border border-input bg-muted/50 px-3 text-sm text-muted-foreground">+212</span>
-                <Input
-                  id="phone"
-                  type="tel"
-                  inputMode="numeric"
-                  maxLength={10}
-                  dir="ltr"
-                  placeholder="6XXXXXXXX"
-                  {...register('phone')}
-                  onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '').slice(0, 10); }}
-                />
-              </div>
+              <Input
+                id="phone"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                dir="ltr"
+                placeholder="0XXXXXXXXX"
+                className="mt-1.5"
+                {...register('phone')}
+                onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '').slice(0, 10); }}
+              />
             </div>
             <div>
               <Label htmlFor="email">Email</Label>

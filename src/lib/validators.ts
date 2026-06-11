@@ -8,7 +8,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 
 export const clientSchema = z.object({
   name: z.string().min(2, 'Nom requis (2+ caractères)'),
-  phone: z.string().regex(/^\d{10}$/, 'Le téléphone doit comporter exactement 10 chiffres'),
+  phone: z.string().regex(/^0\d{9}$/, 'Le téléphone doit commencer par 0 et comporter 10 chiffres (ex. 0612345678)'),
   email: z.string().email('Email invalide').optional().or(z.literal('')).nullable(),
   address: z.string().optional().nullable(),
   tax_id: z.string().optional().nullable(),
@@ -19,7 +19,7 @@ export type ClientInput = z.infer<typeof clientSchema>;
 export const supplierSchema = z.object({
   name: z.string().min(2, 'Nom requis'),
   contact_name: z.string().optional().nullable(),
-  phone: z.string().regex(/^\d{10}$/, 'Le téléphone doit comporter exactement 10 chiffres'),
+  phone: z.string().regex(/^0\d{9}$/, 'Le téléphone doit commencer par 0 et comporter 10 chiffres (ex. 0612345678)'),
   email: z.string().email('Email invalide').optional().or(z.literal('')).nullable(),
   address: z.string().optional().nullable(),
   tax_id: z.string().optional().nullable(),

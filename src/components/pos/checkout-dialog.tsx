@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency, formatPhone } from '@/lib/utils';
 import { usePOSStore } from '@/store/pos';
 import { useClients } from '@/hooks/use-queries';
 import { createClient } from '@/lib/supabase/client';
@@ -87,7 +87,7 @@ export function CheckoutDialog({ open, onOpenChange, profile }: CheckoutDialogPr
       toast.error(t('clients.name_required'));
       return;
     }
-    if (!/^\d{10}$/.test(phone)) {
+    if (!/^0\d{9}$/.test(phone)) {
       toast.error(t('clients.phone_invalid'));
       return;
     }
@@ -350,7 +350,7 @@ export function CheckoutDialog({ open, onOpenChange, profile }: CheckoutDialogPr
                     <UserCheck className="h-4 w-4 shrink-0" />
                     <span className="truncate">{c.name}</span>
                   </span>
-                  {c.phone && <span dir="ltr" className="text-xs text-muted-foreground shrink-0">{c.phone}</span>}
+                  {c.phone && <span dir="ltr" className="text-xs text-muted-foreground shrink-0">{formatPhone(c.phone)}</span>}
                 </button>
               ))}
             </div>
@@ -368,20 +368,17 @@ export function CheckoutDialog({ open, onOpenChange, profile }: CheckoutDialogPr
                 </div>
                 <div>
                   <Label htmlFor="nc_phone" className="text-xs">{t('clients.phone')} *</Label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span dir="ltr" className="shrink-0 inline-flex h-9 items-center rounded-lg border border-input bg-muted/50 px-2.5 text-sm text-muted-foreground">+212</span>
-                    <Input
-                      id="nc_phone"
-                      type="tel"
-                      inputMode="numeric"
-                      maxLength={10}
-                      dir="ltr"
-                      placeholder="6XXXXXXXX"
-                      value={newClientPhone}
-                      onChange={(e) => setNewClientPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      className="h-9"
-                    />
-                  </div>
+                  <Input
+                    id="nc_phone"
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                    dir="ltr"
+                    placeholder="0XXXXXXXXX"
+                    value={newClientPhone}
+                    onChange={(e) => setNewClientPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    className="h-9 mt-1"
+                  />
                 </div>
                 <div className="flex gap-2">
                   <Button type="button" size="sm" className="flex-1" loading={creatingClient} onClick={handleCreateClient}>
