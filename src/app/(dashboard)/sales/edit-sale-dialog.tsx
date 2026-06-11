@@ -147,50 +147,62 @@ export function EditSaleDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) setInitFor(null); onOpenChange(o); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{t('sales.edit')} {sale ? `· ${sale.sale_number}` : ''}</DialogTitle>
+      <DialogContent className="max-w-2xl max-h-[92vh] flex flex-col gap-0 p-0 overflow-hidden">
+        {/* En-tête fixe : titre + total en direct */}
+        <DialogHeader className="px-5 py-4 border-b border-border/60 shrink-0">
+          <div className="flex items-center justify-between gap-3">
+            <DialogTitle className="text-base">
+              {t('sales.edit')} {sale ? `· ${sale.sale_number}` : ''}
+            </DialogTitle>
+            <div className="text-end shrink-0">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground leading-none">{t('receipt.total')}</div>
+              <div className="font-mono font-bold text-lg text-primary leading-tight">{formatCurrency(totals.total)}</div>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Lignes */}
+        {/* Corps défilable */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {/* Lignes — compactes : nom + champs sur une seule ligne */}
           <div className="space-y-2">
+            {/* Intitulés de colonnes (une seule fois) */}
+            <div className="grid grid-cols-[1fr_72px_84px_64px_36px] gap-2 px-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+              <span>{t('common.product')}</span>
+              <span className="text-center">{t('checkout.meters')}</span>
+              <span className="text-center">{t('checkout.price')}</span>
+              <span className="text-center">%</span>
+              <span></span>
+            </div>
             {lines.map((l, i) => (
-              <div key={i} className="rounded-lg border border-border/60 p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm">{l.name}</span>
-                  <Button size="sm" variant="ghost" onClick={() => removeLine(i)}>
+              <div key={i} className="rounded-lg border border-border/60 px-2 py-2">
+                <div className="grid grid-cols-[1fr_72px_84px_64px_36px] gap-2 items-center">
+                  <div className="min-w-0">
+                    <div className="font-medium text-sm truncate">{l.name}</div>
+                    <div className="text-xs font-mono text-muted-foreground">
+                      {formatCurrency(l.meters * l.price_per_meter * (1 - l.discount_percent / 100))}
+                    </div>
+                  </div>
+                  <Input
+                    className="h-9 px-2 text-center font-mono"
+                    type="number" inputMode="decimal" min="0" step="0.01"
+                    value={l.meters}
+                    onChange={(e) => setLine(i, { meters: parseFloat(e.target.value) || 0 })}
+                  />
+                  <Input
+                    className="h-9 px-2 text-center font-mono"
+                    type="number" inputMode="decimal" min="0" step="0.01"
+                    value={l.price_per_meter}
+                    onChange={(e) => setLine(i, { price_per_meter: parseFloat(e.target.value) || 0 })}
+                  />
+                  <Input
+                    className="h-9 px-2 text-center font-mono"
+                    type="number" inputMode="decimal" min="0" max="100" step="1"
+                    value={l.discount_percent}
+                    onChange={(e) => setLine(i, { discount_percent: parseFloat(e.target.value) || 0 })}
+                  />
+                  <Button size="sm" variant="ghost" className="h-9 w-9 p-0" onClick={() => removeLine(i)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <Label className="text-[10px]">{t('checkout.meters')}</Label>
-                    <Input
-                      type="number" inputMode="decimal" min="0" step="0.01"
-                      value={l.meters}
-                      onChange={(e) => setLine(i, { meters: parseFloat(e.target.value) || 0 })}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[10px]">{t('checkout.price')}</Label>
-                    <Input
-                      type="number" inputMode="decimal" min="0" step="0.01"
-                      value={l.price_per_meter}
-                      onChange={(e) => setLine(i, { price_per_meter: parseFloat(e.target.value) || 0 })}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[10px]">{t('checkout.discount')}</Label>
-                    <Input
-                      type="number" inputMode="decimal" min="0" max="100" step="1"
-                      value={l.discount_percent}
-                      onChange={(e) => setLine(i, { discount_percent: parseFloat(e.target.value) || 0 })}
-                    />
-                  </div>
-                </div>
-                <div className="text-right text-sm font-mono font-semibold">
-                  {formatCurrency(l.meters * l.price_per_meter * (1 - l.discount_percent / 100))}
                 </div>
               </div>
             ))}
@@ -203,7 +215,7 @@ export function EditSaleDialog({
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    autoFocus className="pl-9"
+                    autoFocus className="pl-9 h-9"
                     placeholder={t('pos.search_product')}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -213,15 +225,15 @@ export function EditSaleDialog({
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="max-h-48 overflow-y-auto divide-y divide-border/60">
+              <div className="max-h-44 overflow-y-auto divide-y divide-border/60">
                 {(products ?? []).slice(0, 30).map((p) => (
                   <button
                     key={p.id}
-                    className="w-full text-left py-2 px-1 hover:bg-accent/50 rounded flex justify-between items-center"
+                    className="w-full text-start py-2 px-1 hover:bg-accent/50 rounded flex justify-between items-center gap-2"
                     onClick={() => addProduct(p)}
                   >
-                    <span className="text-sm">{p.name}</span>
-                    <span className="text-xs text-muted-foreground font-mono">
+                    <span className="text-sm truncate">{p.name}</span>
+                    <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
                       {formatNumber(p.stock_meters, 0)} m · {formatCurrency(p.price || p.default_price_per_meter)}
                     </span>
                   </button>
@@ -229,17 +241,17 @@ export function EditSaleDialog({
               </div>
             </div>
           ) : (
-            <Button variant="outline" className="w-full" onClick={() => setPickerOpen(true)}>
+            <Button variant="outline" size="sm" className="w-full" onClick={() => setPickerOpen(true)}>
               <Plus className="h-4 w-4" /> {t('sales.edit_add')}
             </Button>
           )}
 
-          {/* Paiement */}
+          {/* Paiement + Notes sur une ligne */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs mb-1.5 block">{t('checkout.payment_method')}</Label>
               <Select value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cash">{t('checkout.cash')}</SelectItem>
                   <SelectItem value="check">{t('checkout.check')}</SelectItem>
@@ -250,6 +262,7 @@ export function EditSaleDialog({
             <div>
               <Label className="text-xs mb-1.5 block">{t('checkout.paid')}</Label>
               <Input
+                className="h-9 font-mono"
                 type="number" inputMode="decimal" min="0" step="0.01"
                 value={paidInput}
                 onChange={(e) => setPaidInput(e.target.value)}
@@ -259,27 +272,36 @@ export function EditSaleDialog({
 
           <div>
             <Label className="text-xs mb-1.5 block">Notes</Label>
-            <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <Textarea rows={1} className="min-h-[38px]" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
 
-          {/* Totaux */}
-          <div className="rounded-lg bg-muted/40 p-3 space-y-1 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">{t('receipt.subtotal')}</span><span className="font-mono">{formatCurrency(totals.subtotal)}</span></div>
+          {/* Totaux compacts */}
+          <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm space-y-1">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted-foreground">{t('receipt.subtotal')}</span>
+              <span className="font-mono whitespace-nowrap">{formatCurrency(totals.subtotal)}</span>
+            </div>
             {totals.itemsDiscount > 0 && (
-              <div className="flex justify-between"><span className="text-muted-foreground">{t('receipt.discount')}</span><span className="font-mono">−{formatCurrency(totals.itemsDiscount)}</span></div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-muted-foreground">{t('receipt.discount')}</span>
+                <span className="font-mono whitespace-nowrap">−{formatCurrency(totals.itemsDiscount)}</span>
+              </div>
             )}
-            <div className="flex justify-between border-t border-border pt-1 mt-1"><strong>{t('receipt.total')}</strong><strong className="font-mono">{formatCurrency(totals.total)}</strong></div>
             {totals.credit > 0 && (
-              <div className="flex justify-between text-warning"><span>{t('checkout.credit')}</span><span className="font-mono">{formatCurrency(totals.credit)}</span></div>
+              <div className="flex items-center justify-between gap-3 text-warning">
+                <span>{t('checkout.credit')}</span>
+                <span className="font-mono whitespace-nowrap">{formatCurrency(totals.credit)}</span>
+              </div>
             )}
           </div>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="ghost" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
+        {/* Pied fixe : boutons toujours visibles */}
+        <DialogFooter className="px-5 py-3 border-t border-border/60 shrink-0 flex-row gap-2 sm:justify-end bg-background">
+          <Button variant="ghost" className="flex-1 sm:flex-none" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button className="w-full sm:w-auto" onClick={handleSave} loading={loading} disabled={lines.length === 0}>
+          <Button className="flex-1 sm:flex-none" onClick={handleSave} loading={loading} disabled={lines.length === 0}>
             {t('common.save')}
           </Button>
         </DialogFooter>
