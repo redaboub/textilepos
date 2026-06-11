@@ -63,7 +63,6 @@ const NAV_GROUPS: { titleKey: TranslationKey; items: NavItem[] }[] = [
     items: [
       { href: '/sales', labelKey: 'nav.sales', icon: Receipt, roles: ['super_admin', 'caissier'] },
       { href: '/checks', labelKey: 'nav.checks', icon: FileCheck2, roles: ['super_admin'] },
-      { href: '/reports', labelKey: 'nav.reports', icon: BarChart3, roles: ['super_admin'] },
     ],
   },
   {

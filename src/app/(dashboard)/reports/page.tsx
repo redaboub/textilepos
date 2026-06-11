@@ -1,10 +1,7 @@
-import { Metadata } from 'next';
-import { requireAuth } from '@/lib/auth';
-import { ReportsClient } from './reports-client';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = { title: 'Rapports' };
-
-export default async function ReportsPage() {
-  const profile = await requireAuth();
-  return <ReportsClient role={profile.role} />;
+// La page Rapports a été fusionnée dans « Ventes ».
+// On redirige toute ancienne URL /reports vers /sales.
+export default function ReportsPage() {
+  redirect('/sales');
 }

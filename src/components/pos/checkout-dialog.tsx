@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Banknote, FileText, ArrowRightLeft, CheckCircle2, Printer, User, UserCheck, UserPlus, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -16,9 +16,8 @@ import { usePOSStore } from '@/store/pos';
 import { useClients } from '@/hooks/use-queries';
 import { createClient } from '@/lib/supabase/client';
 import type { Profile, PaymentMethod, Sale } from '@/types/database';
-import { createPortal } from 'react-dom';
 import { Receipt } from './receipt';
-import { printReceipt } from '@/lib/print';
+import { printReceiptHtml } from '@/lib/print';
 import { useI18n } from '@/lib/i18n/context';
 
 const PAYMENT_OPTIONS: { value: PaymentMethod; labelKey: any; icon: any }[] = [
@@ -59,6 +58,7 @@ export function CheckoutDialog({ open, onOpenChange, profile }: CheckoutDialogPr
   const [loading, setLoading] = useState(false);
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
   const [ticketMode, setTicketMode] = useState<'client' | 'magasin'>('client');
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   // Champs chèque (quand paiement par chèque)
   const [checkNumber, setCheckNumber] = useState('');
@@ -69,16 +69,6 @@ export function CheckoutDialog({ open, onOpenChange, profile }: CheckoutDialogPr
   const paid = parseFloat(paidInput) || 0;
   const change = Math.max(0, paid - total);
   const credit = Math.max(0, total - paid);
-
-  // Tant que l'écran de succès est affiché, on marque le <body> :
-  // n'importe quelle impression (bouton de l'app OU impression navigateur/tablette)
-  // n'imprimera alors que le reçu, sur une seule page.
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    if (completedSale) document.body.classList.add('has-receipt');
-    else document.body.classList.remove('has-receipt');
-    return () => document.body.classList.remove('has-receipt');
-  }, [completedSale]);
 
   const handleCreateClient = async () => {
     const name = newClientName.trim();
@@ -232,8 +222,8 @@ export function CheckoutDialog({ open, onOpenChange, profile }: CheckoutDialogPr
 
   const handlePrint = (mode: 'client' | 'magasin') => {
     setTicketMode(mode);
-    // Laisser React rendre le bon ticket avant d'imprimer
-    setTimeout(() => printReceipt(), 60);
+    // Laisser React rendre le bon ticket (client/magasin) avant de l'imprimer
+    setTimeout(() => printReceiptHtml(receiptRef.current), 60);
   };
 
   // Vue succès + tickets
@@ -252,15 +242,10 @@ export function CheckoutDialog({ open, onOpenChange, profile }: CheckoutDialogPr
               </p>
             </div>
 
-            {/* Ticket imprimable — rendu directement dans <body> via un portail,
-                pour qu'il sorte de la fenêtre (Dialog) et s'imprime sur UNE seule page */}
-            {typeof window !== 'undefined' &&
-              createPortal(
-                <div className="printable">
-                  <Receipt sale={completedSale} variant={ticketMode} />
-                </div>,
-                document.body,
-              )}
+            {/* Ticket rendu caché ; son contenu est imprimé dans un iframe isolé */}
+            <div ref={receiptRef} style={{ display: 'none' }} aria-hidden>
+              <Receipt sale={completedSale} variant={ticketMode} />
+            </div>
 
             <div className="flex flex-col gap-2 w-full pt-4">
               <Button onClick={() => handlePrint('client')} size="lg" className="w-full">

@@ -68,3 +68,57 @@ export function printAs(mode: PrintMode) {
 
 export const printReceipt = () => printAs('receipt');
 export const printLabel = () => printAs('label');
+
+/**
+ * Imprime un ticket de façon TOTALEMENT isolée, dans un iframe dédié.
+ * L'iframe ne contient QUE le ticket → impossible d'avoir des pages en
+ * double, ou d'imprimer la liste / l'écran de succès à la place.
+ * Robuste sur tablette et navigateur (ne dépend d'aucune règle @media print
+ * globale ni de classe sur <body>).
+ *
+ * @param container un élément dont le contenu (innerHTML) est le ticket
+ */
+export function printReceiptHtml(container: HTMLElement | null) {
+  if (typeof window === 'undefined' || !container) return;
+  const html = container.innerHTML;
+  if (!html.trim()) return;
+
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  document.body.appendChild(iframe);
+
+  const cw = iframe.contentWindow;
+  if (!cw) { iframe.remove(); return; }
+
+  cw.document.open();
+  cw.document.write(
+    '<!DOCTYPE html><html><head><meta charset="utf-8"><style>' +
+    '@page{size:80mm auto;margin:0}' +
+    "html,body{margin:0;padding:0;background:#fff;color:#000;font-family:'Courier New',monospace;font-size:11px;line-height:1.4}" +
+    '*{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}' +
+    '</style></head><body>' + html + '</body></html>'
+  );
+  cw.document.close();
+
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    try { iframe.remove(); } catch { /* noop */ }
+  };
+  cw.onafterprint = cleanup;
+
+  // Laisser l'iframe se mettre en page avant d'imprimer
+  setTimeout(() => {
+    try { cw.focus(); cw.print(); } catch { cleanup(); }
+  }, 150);
+
+  // Filet de sécurité si afterprint ne se déclenche pas
+  setTimeout(cleanup, 60000);
+}
